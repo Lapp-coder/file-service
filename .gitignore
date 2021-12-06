@@ -3,3 +3,6 @@ build/bin
 
 # Secrets
 .env
+
+# JetBrains IDE
+.idea/

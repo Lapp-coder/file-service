@@ -1,7 +1,6 @@
-package handler
+package v1
 
 import (
-	v1 "github.com/Lapp-coder/file-service/internal/handler/v1"
 	"github.com/Lapp-coder/file-service/internal/service"
 	"github.com/gofiber/fiber/v2"
 )
@@ -19,9 +18,13 @@ func New(router fiber.Router, service service.Service) Handler {
 }
 
 func (h *Handler) Init() {
-	api := h.router.Group("/api")
+	v1 := h.router.Group("/v1")
 	{
-		handlerV1 := v1.New(api, h.service)
-		handlerV1.Init()
+		files := v1.Group("/files")
+		{
+			files.Post("/", h.uploadFile)
+			files.Get("/:uuid", h.getFileByUUID)
+			files.Get("/:uuid/statistics", h.getFileStatisticByUUID)
+		}
 	}
 }

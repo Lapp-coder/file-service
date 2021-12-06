@@ -11,20 +11,32 @@ const configName = "config"
 type Config struct {
 	Server
 	MinIO
+	Postgres
 }
 
 type Server struct {
 	Name         string `mapstructure:"name"`
 	Host         string `mapstructure:"host"`
-	Port         string `mapstructure:"port"`
+	Port         uint16 `mapstructure:"port"`
 	BodyLimit    int    `mapstructure:"body_limit"`
 	ReadTimeout  int    `mapstructure:"read_timeout"`
 	WriteTimeout int    `mapstructure:"write_timeout"`
 }
 
 type MinIO struct {
+	Host      string `mapstructure:"host"`
+	Port      uint16 `mapstructure:"port"`
 	AccessKey string
 	SecretKey string
+}
+
+type Postgres struct {
+	Host     string `mapstructure:"host"`
+	Port     uint16 `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string
+	DBName   string `mapstructure:"db_name"`
+	SSLMode  string `mapstructure:"ssl_mode"`
 }
 
 func New(configPath string) (Config, error) {
@@ -47,6 +59,14 @@ func unmarshal(configPath string, cfg *Config) error {
 		return err
 	}
 
+	if err := viper.UnmarshalKey("minio", &cfg.MinIO); err != nil {
+		return err
+	}
+
+	if err := viper.UnmarshalKey("postgres", &cfg.Postgres); err != nil {
+		return err
+	}
+
 	if err := loadEnv(cfg); err != nil {
 		return err
 	}
@@ -65,8 +85,14 @@ func loadEnv(cfg *Config) error {
 		return ErrMinIOSecretKeyIsEmpty
 	}
 
+	postgresPassword := os.Getenv("POSTGRES_PASSWORD")
+	if postgresPassword == "" {
+		return ErrPostgresPasswordIsEmpty
+	}
+
 	cfg.MinIO.AccessKey = accessKey
 	cfg.MinIO.SecretKey = secretKey
+	cfg.Postgres.Password = postgresPassword
 
 	return nil
 }

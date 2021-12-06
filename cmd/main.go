@@ -3,10 +3,14 @@ package main
 import (
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/Lapp-coder/file-service/internal/config"
+	"github.com/Lapp-coder/file-service/internal/handler"
+	"github.com/Lapp-coder/file-service/internal/repository"
+	"github.com/Lapp-coder/file-service/internal/service"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 )
@@ -14,6 +18,9 @@ import (
 const configPath = "configs/"
 
 func main() {
+	logrus.SetFormatter(new(logrus.JSONFormatter))
+	logrus.SetReportCaller(true)
+
 	cfg, err := config.New(configPath)
 	if err != nil {
 		logrus.Fatalf("failed to init config: %s", err.Error())
@@ -26,9 +33,25 @@ func main() {
 		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
 	})
 
+	minioClient, err := repository.NewMinIOClient(cfg.MinIO)
+	if err != nil {
+		logrus.Fatalf("failed to init minio client: %s", err.Error())
+	}
+
+	postgresConn, err := repository.NewPostgresConn(cfg.Postgres)
+	if err != nil {
+		logrus.Fatalf("failed to init connection with postgres: %s", err.Error())
+	}
+
+	repositories := repository.New(minioClient, postgresConn)
+	services := service.New(repositories)
+	handlers := handler.New(app, services)
+
+	handlers.Init()
+
 	go func() {
-		addr := cfg.Server.Host + ":" + cfg.Server.Port
-		if err := app.Listen(addr); err != nil {
+		addr := cfg.Server.Host + ":" + strconv.Itoa(int(cfg.Server.Port))
+		if err = app.Listen(addr); err != nil {
 			logrus.Errorf("failed to start server: %s", err.Error())
 		}
 	}()
@@ -41,7 +64,11 @@ func main() {
 
 	logrus.Info("file-service shutdown")
 
-	if err := app.Shutdown(); err != nil {
+	if err = app.Shutdown(); err != nil {
 		logrus.Errorf("failed to gracefully shutdown file-service: %s", err.Error())
+	}
+
+	if err = postgresConn.Close(); err != nil {
+		logrus.Errorf("failed to close connection with postgres: %s", err.Error())
 	}
 }
