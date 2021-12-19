@@ -1,14 +1,13 @@
-package repository
+package client
 
 import (
-	"github.com/jackc/pgx"
-
 	"github.com/Lapp-coder/file-service/internal/config"
+	"github.com/jackc/pgx"
 )
 
 const (
-	fileTable          = "file"
-	fileStatisticTable = "file_statistic"
+	PostgresFileTable     = "file"
+	PostgresFileStatistic = "file_statistic"
 )
 
 func NewPostgresConn(cfg config.Postgres) (*pgx.Conn, error) {

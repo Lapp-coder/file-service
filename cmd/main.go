@@ -7,10 +7,14 @@ import (
 	"syscall"
 	"time"
 
+	fileHandler "github.com/Lapp-coder/file-service/internal/adapters/api/v1/file"
+
+	fileService "github.com/Lapp-coder/file-service/internal/domain/file"
+
+	fileStorage "github.com/Lapp-coder/file-service/internal/adapters/db/file"
+
 	"github.com/Lapp-coder/file-service/internal/config"
-	"github.com/Lapp-coder/file-service/internal/handler"
-	"github.com/Lapp-coder/file-service/internal/repository"
-	"github.com/Lapp-coder/file-service/internal/service"
+	"github.com/Lapp-coder/file-service/pkg/client"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 )
@@ -33,21 +37,21 @@ func main() {
 		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
 	})
 
-	minioClient, err := repository.NewMinIOClient(cfg.MinIO)
+	minioClient, err := client.NewMinIOClient(cfg.MinIO)
 	if err != nil {
 		logrus.Fatalf("failed to init minio client: %s", err.Error())
 	}
 
-	postgresConn, err := repository.NewPostgresConn(cfg.Postgres)
+	postgresConn, err := client.NewPostgresConn(cfg.Postgres)
 	if err != nil {
 		logrus.Fatalf("failed to init connection with postgres: %s", err.Error())
 	}
 
-	repositories := repository.New(minioClient, postgresConn)
-	services := service.New(repositories)
-	handlers := handler.New(app, services)
+	storage := fileStorage.New(minioClient, postgresConn)
+	service := fileService.New(storage)
+	handler := fileHandler.New(service)
 
-	handlers.Init()
+	handler.Register(app.Group("/api/v1"))
 
 	go func() {
 		addr := cfg.Server.Host + ":" + strconv.Itoa(int(cfg.Server.Port))

@@ -1,4 +1,4 @@
-package repository
+package client
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-const fileBucket = "files"
+const MinIOFileBucket = "files"
 
 func NewMinIOClient(cfg config.MinIO) (*minio.Client, error) {
 	endpoint := cfg.Host + ":" + strconv.Itoa(int(cfg.Port))
@@ -21,13 +21,13 @@ func NewMinIOClient(cfg config.MinIO) (*minio.Client, error) {
 		return nil, err
 	}
 
-	exists, err := client.BucketExists(context.Background(), fileBucket)
+	exists, err := client.BucketExists(context.Background(), MinIOFileBucket)
 	if err != nil {
 		return nil, err
 	}
 
 	if !exists {
-		if err = client.MakeBucket(context.Background(), fileBucket, minio.MakeBucketOptions{}); err != nil {
+		if err = client.MakeBucket(context.Background(), MinIOFileBucket, minio.MakeBucketOptions{}); err != nil {
 			return nil, err
 		}
 	}
