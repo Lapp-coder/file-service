@@ -7,6 +7,8 @@ import (
 	"syscall"
 	"time"
 
+	client2 "github.com/Lapp-coder/file-service/internal/client"
+
 	fileHandler "github.com/Lapp-coder/file-service/internal/adapters/api/v1/file"
 
 	fileService "github.com/Lapp-coder/file-service/internal/domain/file"
@@ -14,7 +16,6 @@ import (
 	fileStorage "github.com/Lapp-coder/file-service/internal/adapters/db/file"
 
 	"github.com/Lapp-coder/file-service/internal/config"
-	"github.com/Lapp-coder/file-service/pkg/client"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 )
@@ -37,12 +38,12 @@ func main() {
 		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
 	})
 
-	minioClient, err := client.NewMinIOClient(cfg.MinIO)
+	minioClient, err := client2.NewMinIOClient(cfg.MinIO)
 	if err != nil {
 		logrus.Fatalf("failed to init minio client: %s", err.Error())
 	}
 
-	postgresConn, err := client.NewPostgresConn(cfg.Postgres)
+	postgresConn, err := client2.NewPostgresConn(cfg.Postgres)
 	if err != nil {
 		logrus.Fatalf("failed to init connection with postgres: %s", err.Error())
 	}

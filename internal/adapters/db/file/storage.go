@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Lapp-coder/file-service/pkg/client"
+	"github.com/Lapp-coder/file-service/internal/client"
 
 	"github.com/Lapp-coder/file-service/internal/domain/file"
 	"github.com/jackc/pgx"
