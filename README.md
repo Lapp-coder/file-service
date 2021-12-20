@@ -1,7 +1,7 @@
 # File-service
 
 [![Go](https://img.shields.io/badge/go-1.17-blue)](https://golang.org/doc/go1.17)
-[![Tagj](https://img.shields.io/badge/tag-1.0.1-success)](https://github.com/Lapp-coder/file-service/tags)
+[![Tagj](https://img.shields.io/badge/release-1.0.1-success)](https://github.com/Lapp-coder/file-service/releases)
 
 ***
 
