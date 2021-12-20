@@ -14,7 +14,7 @@ type service struct {
 	storage Storage
 }
 
-func New(storage Storage) Service {
+func NewService(storage Storage) Service {
 	return &service{
 		storage: storage,
 	}

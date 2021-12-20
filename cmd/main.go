@@ -7,13 +7,9 @@ import (
 	"syscall"
 	"time"
 
-	client2 "github.com/Lapp-coder/file-service/internal/client"
+	"github.com/Lapp-coder/file-service/internal/composites"
 
-	fileHandler "github.com/Lapp-coder/file-service/internal/adapters/api/v1/file"
-
-	fileService "github.com/Lapp-coder/file-service/internal/domain/file"
-
-	fileStorage "github.com/Lapp-coder/file-service/internal/adapters/db/file"
+	"github.com/Lapp-coder/file-service/internal/client"
 
 	"github.com/Lapp-coder/file-service/internal/config"
 	"github.com/gofiber/fiber/v2"
@@ -38,21 +34,20 @@ func main() {
 		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
 	})
 
-	minioClient, err := client2.NewMinIOClient(cfg.MinIO)
+	minioClient, err := client.NewMinIOClient(cfg.MinIO)
 	if err != nil {
 		logrus.Fatalf("failed to init minio client: %s", err.Error())
 	}
 
-	postgresConn, err := client2.NewPostgresConn(cfg.Postgres)
+	postgresConn, err := client.NewPostgresConn(cfg.Postgres)
 	if err != nil {
 		logrus.Fatalf("failed to init connection with postgres: %s", err.Error())
 	}
 
-	storage := fileStorage.New(minioClient, postgresConn)
-	service := fileService.New(storage)
-	handler := fileHandler.New(service)
+	fileComposite := composites.NewFileComposite(minioClient, postgresConn)
 
-	handler.Register(app.Group("/api/v1"))
+	apiV1 := app.Group("/api/v1")
+	fileComposite.Handler.Register(apiV1)
 
 	go func() {
 		addr := cfg.Server.Host + ":" + strconv.Itoa(int(cfg.Server.Port))

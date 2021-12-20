@@ -23,7 +23,7 @@ type handler struct {
 	service file.Service
 }
 
-func New(service file.Service) api.Handler {
+func NewHandler(service file.Service) api.Handler {
 	return &handler{service: service}
 }
 

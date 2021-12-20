@@ -17,7 +17,7 @@ type storage struct {
 	pgConn      *pgx.Conn
 }
 
-func New(minioClient *minio.Client, pgConn *pgx.Conn) file.Storage {
+func NewStorage(minioClient *minio.Client, pgConn *pgx.Conn) file.Storage {
 	return &storage{
 		minioClient: minioClient,
 		pgConn:      pgConn,
