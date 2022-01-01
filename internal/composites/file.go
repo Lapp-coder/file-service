@@ -10,19 +10,19 @@ import (
 )
 
 type FileComposite struct {
-	Storage file.Storage
-	Service file.Service
-	Handler api.Handler
+	Handler    api.Handler
+	Service    file.Service
+	Repository file.Repository
 }
 
 func NewFileComposite(minioClient *minio.Client, pgConn *pgx.Conn) *FileComposite {
-	storage := file2.NewStorage(minioClient, pgConn)
-	service := file.NewService(storage)
+	repository := file2.NewRepository(minioClient, pgConn)
+	service := file.NewService(repository)
 	handler := file3.NewHandler(service)
 
 	return &FileComposite{
-		Storage: storage,
-		Service: service,
-		Handler: handler,
+		Handler:    handler,
+		Service:    service,
+		Repository: repository,
 	}
 }

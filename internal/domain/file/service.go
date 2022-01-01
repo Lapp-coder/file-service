@@ -11,17 +11,17 @@ type Service interface {
 }
 
 type service struct {
-	storage Storage
+	repository Repository
 }
 
-func NewService(storage Storage) Service {
+func NewService(repository Repository) Service {
 	return &service{
-		storage: storage,
+		repository: repository,
 	}
 }
 
 func (s *service) SaveFile(file File) error {
-	if err := s.storage.SaveFile(file); err != nil {
+	if err := s.repository.SaveFile(file); err != nil {
 		logrus.Error(err)
 		return ErrFailedToSaveFile
 	}
@@ -30,7 +30,7 @@ func (s *service) SaveFile(file File) error {
 }
 
 func (s *service) GetFileByUUID(uuid string) (File, error) {
-	file, err := s.storage.GetFileByUUID(uuid)
+	file, err := s.repository.GetFileByUUID(uuid)
 	if err != nil {
 		logrus.Error(err)
 		return File{}, ErrFailedToGetFileByUUID
@@ -40,7 +40,7 @@ func (s *service) GetFileByUUID(uuid string) (File, error) {
 }
 
 func (s *service) GetFileStatisticByUUID(uuid string) (Statistic, error) {
-	fileStatistic, err := s.storage.GetFileStatisticByUUID(uuid)
+	fileStatistic, err := s.repository.GetFileStatisticByUUID(uuid)
 	if err != nil {
 		logrus.Error(err)
 		return Statistic{}, ErrFailedToGetFileStatisticByUUID

@@ -12,31 +12,31 @@ import (
 	"github.com/minio/minio-go/v7"
 )
 
-type storage struct {
+type repository struct {
 	minioClient *minio.Client
 	pgConn      *pgx.Conn
 }
 
-func NewStorage(minioClient *minio.Client, pgConn *pgx.Conn) file.Storage {
-	return &storage{
+func NewRepository(minioClient *minio.Client, pgConn *pgx.Conn) file.Repository {
+	return &repository{
 		minioClient: minioClient,
 		pgConn:      pgConn,
 	}
 }
 
-func (s *storage) SaveFile(file file.File) error {
-	tx, err := s.pgConn.Begin()
+func (r *repository) SaveFile(file file.File) error {
+	tx, err := r.pgConn.Begin()
 	if err != nil {
 		return err
 	}
 
-	query1 := fmt.Sprintf("INSERT INTO %s (uuid, name, size) VALUES ($1, $2, $3)", client.PostgresFileTable)
+	query1 := fmt.Sprintf("INSERT INTO %r (uuid, name, size) VALUES ($1, $2, $3)", client.PostgresFileTable)
 	if _, err = tx.Exec(query1, file.UUID, file.Metadata.Name, file.Metadata.Size); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	query2 := fmt.Sprintf("INSERT INTO %s (file_uuid) VALUES ($1)", client.PostgresFileStatistic)
+	query2 := fmt.Sprintf("INSERT INTO %r (file_uuid) VALUES ($1)", client.PostgresFileStatistic)
 	if _, err = tx.Exec(query2, file.UUID); err != nil {
 		tx.Rollback()
 		return err
@@ -48,7 +48,7 @@ func (s *storage) SaveFile(file file.File) error {
 		return err
 	}
 
-	if _, err = s.minioClient.PutObject(
+	if _, err = r.minioClient.PutObject(
 		context.Background(),
 		client.MinIOFileBucket,
 		file.UUID,
@@ -68,19 +68,19 @@ func (s *storage) SaveFile(file file.File) error {
 	return nil
 }
 
-func (s *storage) GetFileByUUID(uuid string) (file.File, error) {
-	tx, err := s.pgConn.Begin()
+func (r *repository) GetFileByUUID(uuid string) (file.File, error) {
+	tx, err := r.pgConn.Begin()
 	if err != nil {
 		return file.File{}, err
 	}
 
-	query := fmt.Sprintf("UPDATE %s SET request_count = request_count + 1 WHERE file_uuid = $1", client.PostgresFileStatistic)
+	query := fmt.Sprintf("UPDATE %r SET request_count = request_count + 1 WHERE file_uuid = $1", client.PostgresFileStatistic)
 	if _, err = tx.Exec(query, uuid); err != nil {
 		tx.Rollback()
 		return file.File{}, err
 	}
 
-	obj, err := s.minioClient.GetObject(context.Background(), client.MinIOFileBucket, uuid, minio.GetObjectOptions{})
+	obj, err := r.minioClient.GetObject(context.Background(), client.MinIOFileBucket, uuid, minio.GetObjectOptions{})
 	if err != nil {
 		tx.Rollback()
 		return file.File{}, err
@@ -109,10 +109,10 @@ func (s *storage) GetFileByUUID(uuid string) (file.File, error) {
 	}, nil
 }
 
-func (s *storage) GetFileStatisticByUUID(uuid string) (file.Statistic, error) {
+func (r *repository) GetFileStatisticByUUID(uuid string) (file.Statistic, error) {
 	var statistic file.Statistic
-	query := fmt.Sprintf("SELECT request_count FROM %s WHERE file_uuid = $1", client.PostgresFileStatistic)
-	if err := s.pgConn.QueryRow(query, uuid).Scan(&statistic.RequestCount); err != nil {
+	query := fmt.Sprintf("SELECT request_count FROM %r WHERE file_uuid = $1", client.PostgresFileStatistic)
+	if err := r.pgConn.QueryRow(query, uuid).Scan(&statistic.RequestCount); err != nil {
 		return file.Statistic{}, err
 	}
 
