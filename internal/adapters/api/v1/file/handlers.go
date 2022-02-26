@@ -14,9 +14,8 @@ import (
 )
 
 const (
-	filesURI          = "/files/"
-	fileURI           = "/files/:uuid"
-	fileStatisticsURI = "/files/:uuid/statistics"
+	filesURI = "/files"
+	fileURI  = "/files/:uuid"
 )
 
 type handler struct {
@@ -27,10 +26,9 @@ func NewHandler(service file.Service) api.Handler {
 	return &handler{service: service}
 }
 
-func (h *handler) Register(router fiber.Router) {
+func (h *handler) Init(router fiber.Router) {
 	router.Post(filesURI, h.uploadFile)
 	router.Get(fileURI, h.getFileByUUID)
-	router.Get(fileStatisticsURI, h.getFileStatisticByUUID)
 }
 
 func (h *handler) uploadFile(ctx *fiber.Ctx) error {
@@ -69,18 +67,18 @@ func (h *handler) uploadFile(ctx *fiber.Ctx) error {
 }
 
 func (h *handler) getFileByUUID(ctx *fiber.Ctx) error {
-	fileUUID := ctx.Params("uuid")
-	if _, err := uuid.Parse(fileUUID); err != nil {
+	fileUUID, err := uuid.Parse(ctx.Params("uuid"))
+	if err != nil {
 		logrus.Error(err)
 		return api.RespondJSON(ctx, fiber.StatusBadRequest, errIncorrectFileUUID)
 	}
 
-	file, err := h.service.GetFileByUUID(fileUUID)
+	f, err := h.service.GetFileByUUID(fileUUID)
 	if err != nil {
 		return api.RespondJSON(ctx, fiber.StatusBadRequest, err)
 	}
 
-	filePath := "/tmp/" + file.UUID
+	filePath := "/tmp/" + f.UUID
 	tmpFile, err := os.Create(filePath)
 	if err != nil {
 		logrus.Error(err)
@@ -88,7 +86,7 @@ func (h *handler) getFileByUUID(ctx *fiber.Ctx) error {
 	}
 	defer os.Remove(filePath)
 
-	if _, err = tmpFile.Write(file.Content); err != nil {
+	if _, err = tmpFile.Write(f.Content); err != nil {
 		logrus.Error(err)
 		return api.RespondJSON(ctx, fiber.StatusInternalServerError, errFailedToCreateFileForSend)
 	}
@@ -99,19 +97,4 @@ func (h *handler) getFileByUUID(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.SendFile(filePath)
-}
-
-func (h *handler) getFileStatisticByUUID(ctx *fiber.Ctx) error {
-	fileUUID := ctx.Params("uuid")
-	if _, err := uuid.Parse(fileUUID); err != nil {
-		logrus.Error(err)
-		return api.RespondJSON(ctx, fiber.StatusBadRequest, errIncorrectFileUUID)
-	}
-
-	fileStatistic, err := h.service.GetFileStatisticByUUID(fileUUID)
-	if err != nil {
-		return api.RespondJSON(ctx, fiber.StatusInternalServerError, err)
-	}
-
-	return api.RespondJSON(ctx, fiber.StatusOK, fiber.Map{"statistics": fileStatistic})
 }

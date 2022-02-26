@@ -1,13 +1,13 @@
 package file
 
 import (
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 type Service interface {
 	SaveFile(File) error
-	GetFileByUUID(string) (File, error)
-	GetFileStatisticByUUID(string) (Statistic, error)
+	GetFileByUUID(uuid.UUID) (File, error)
 }
 
 type service struct {
@@ -29,22 +29,12 @@ func (s *service) SaveFile(file File) error {
 	return nil
 }
 
-func (s *service) GetFileByUUID(uuid string) (File, error) {
-	file, err := s.repository.GetFileByUUID(uuid)
+func (s *service) GetFileByUUID(uuid uuid.UUID) (File, error) {
+	file, err := s.repository.GetFileByUUID(uuid.String())
 	if err != nil {
 		logrus.Error(err)
 		return File{}, ErrFailedToGetFileByUUID
 	}
 
 	return file, nil
-}
-
-func (s *service) GetFileStatisticByUUID(uuid string) (Statistic, error) {
-	fileStatistic, err := s.repository.GetFileStatisticByUUID(uuid)
-	if err != nil {
-		logrus.Error(err)
-		return Statistic{}, ErrFailedToGetFileStatisticByUUID
-	}
-
-	return fileStatistic, nil
 }

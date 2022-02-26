@@ -2,19 +2,19 @@ version: "3.8"
 
 services:
   file-service:
+    restart: always
     depends_on:
       - minio
-      - postgres
     image: file-service
     container_name: file-service
     build: ./
-    command: sh -c "./wait-for-minio.sh minio:9000 && ./wait-for-postgres.sh postgres && ./file-service"
+    command: sh -c "./wait-for-minio.sh minio:9000 && ./file-service"
     volumes:
       - ./configs:/root/configs
     env_file:
       - .env
     ports:
-      - "8080:8080"
+      - "8081:8081"
 
   minio:
     restart: always
@@ -27,16 +27,5 @@ services:
     ports:
       - "9000:9000"
 
-  postgres:
-    restart: always
-    image: postgres:13.5
-    volumes:
-      - pg_data:/var/lib/postgres/data
-    env_file:
-      - .env
-    ports:
-      - "5432:5432"
-
 volumes:
   minio_data:
-  pg_data:

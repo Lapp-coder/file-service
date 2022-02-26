@@ -1,7 +1,7 @@
 server:
   name: "File-service"
   host: "0.0.0.0"
-  port: 8080
+  port: 8081
   body_limit: 120 # MB
   read_timeout: 10 # seconds
   write_timeout: 10 # seconds
@@ -9,9 +9,3 @@ server:
 minio:
   host: "minio"
   port: 9000
-
-postgres:
-  host: "postgres"
-  port: 5432
-  user: "postgres"
-  db_name: "postgres"

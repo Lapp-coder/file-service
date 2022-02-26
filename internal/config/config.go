@@ -9,9 +9,8 @@ import (
 const configName = "config"
 
 type Config struct {
-	Server
-	MinIO
-	Postgres
+	Server Server `mapstructure:"server"`
+	MinIO  MinIO  `mapstructure:"minio"`
 }
 
 type Server struct {
@@ -40,38 +39,22 @@ type Postgres struct {
 }
 
 func New(configPath string) (Config, error) {
+	viper.AddConfigPath(configPath)
+	viper.SetConfigName(configName)
+	if err := viper.ReadInConfig(); err != nil {
+		return Config{}, err
+	}
+
 	var cfg Config
-	if err := unmarshal(configPath, &cfg); err != nil {
+	if err := viper.Unmarshal(&cfg); err != nil {
+		return Config{}, err
+	}
+
+	if err := loadEnv(&cfg); err != nil {
 		return Config{}, err
 	}
 
 	return cfg, nil
-}
-
-func unmarshal(configPath string, cfg *Config) error {
-	viper.AddConfigPath(configPath)
-	viper.SetConfigName(configName)
-	if err := viper.ReadInConfig(); err != nil {
-		return err
-	}
-
-	if err := viper.UnmarshalKey("server", &cfg.Server); err != nil {
-		return err
-	}
-
-	if err := viper.UnmarshalKey("minio", &cfg.MinIO); err != nil {
-		return err
-	}
-
-	if err := viper.UnmarshalKey("postgres", &cfg.Postgres); err != nil {
-		return err
-	}
-
-	if err := loadEnv(cfg); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func loadEnv(cfg *Config) error {
@@ -85,14 +68,8 @@ func loadEnv(cfg *Config) error {
 		return ErrMinIOSecretKeyIsEmpty
 	}
 
-	postgresPassword := os.Getenv("POSTGRES_PASSWORD")
-	if postgresPassword == "" {
-		return ErrPostgresPasswordIsEmpty
-	}
-
 	cfg.MinIO.AccessKey = accessKey
 	cfg.MinIO.SecretKey = secretKey
-	cfg.Postgres.Password = postgresPassword
 
 	return nil
 }

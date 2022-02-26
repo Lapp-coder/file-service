@@ -39,15 +39,10 @@ func main() {
 		logrus.Fatalf("failed to init minio client: %s", err.Error())
 	}
 
-	postgresConn, err := client.NewPostgresConn(cfg.Postgres)
-	if err != nil {
-		logrus.Fatalf("failed to init connection with postgres: %s", err.Error())
-	}
-
-	fileComposite := composites.NewFileComposite(minioClient, postgresConn)
+	fileComposite := composites.NewFileComposite(minioClient)
 
 	apiV1 := app.Group("/api/v1")
-	fileComposite.Handler.Register(apiV1)
+	fileComposite.Handler.Init(apiV1)
 
 	go func() {
 		addr := cfg.Server.Host + ":" + strconv.Itoa(int(cfg.Server.Port))
@@ -58,7 +53,7 @@ func main() {
 
 	logrus.Info("file-service started")
 
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
@@ -66,9 +61,5 @@ func main() {
 
 	if err = app.Shutdown(); err != nil {
 		logrus.Errorf("failed to gracefully shutdown file-service: %s", err.Error())
-	}
-
-	if err = postgresConn.Close(); err != nil {
-		logrus.Errorf("failed to close connection with postgres: %s", err.Error())
 	}
 }
